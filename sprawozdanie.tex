@@ -1,0 +1,247 @@
+\documentclass[11pt,a4paper,twoside]{article}
+
+\usepackage{amsmath} 
+\usepackage{polski}
+\usepackage[utf8]{inputenc}
+\usepackage{latexsym}
+\usepackage{multicol} 
+\usepackage[nottoc]{tocbibind}
+%\usepackage[unicode=true]{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{siunitx}
+\usepackage{hyperref}
+\usepackage{tabto}
+\usepackage{caption}
+%\usepackage{showframe}
+\usepackage{fullpage}
+\usepackage{listingsutf8}
+\usepackage[margin=2.54cm]{geometry}
+\usepackage[singlelinecheck=false % <-- important
+]{caption}
+
+\lstset{ 
+	commentstyle=\color{mygreen},    % comment style
+	extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+	firstnumber=1,                % start line enumeration with line 1000
+	frame=single,	                   % adds a frame around the code
+	language=Matlab,                 % the language of the code
+	numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+	numbersep=5pt,                   % how far the line-numbers are from the code
+	stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+	tabsize=2,	                   % sets default tabsize to 2 spaces
+}
+
+%opening
+\title{Projekt II \\ \large Procesy Losowe - Teoria dla Praktyka}
+\author{Klaudia Klębowska 160820 \\ Bartosz Filipów 160488}
+\date{09.05.2019}
+
+\begin{document}
+	
+\maketitle
+
+\section{Power spectral subtraction}
+Metoda odejmowania widmowego (ang. Spectral Subtraction) służy do oczyszczania zakłóceń oraz rekonstrukcji sygnałów mowy. 
+Każdy nagrywany sygnał, oprócz użytecznej części posiada także pewien poziom szumu. Na wejściu programu mamy zaszumiony dyskretny sygnał $x[t]$. 
+
+\subsection{DFT i IDFT}
+Na początku zdefiniujmy dyskretną transformatę Fouriera (DFT) oraz odwrotną dyskretną transformatę Fouriera (IDFT), które będą potrzebne w dalszych krokach algorytmu.
+
+\begin{equation}	
+\mathrm{dft}(x[t])=X[\omega_{i}]= \sum_{t=1}^{N-1} x[t]e^{-j\omega_{i}t},
+\end{equation}gdzie: \\
+$\omega_{i}=\frac{2\pi i}{M}$, \\
+$ i = 0,1,..., M-1$ \\
+$ M $ - długość sygnału. \\
+
+\begin{equation}
+\mathrm{idft}(X[\omega])=x[t]= \frac{1}{M}\sum_{i=1}^{M-1} X[\omega_{i}]e^{j\omega_{i}t},
+\end{equation}
+gdzie: \\
+$t = 0,1,...,M-1$, \\
+$M$ - długość sygnału. \\
+
+
+\subsection{Estymacja mocy widmowej szumu.}
+Nasz sygnał należy podzielić na ramki o szerokości $N$. Powinna być ona tak dobrana, aby nie była dłuższa, niż 10-20 ms w przypadku sygnału mowy. W pierwszym kroku należy wykorzystać ramkę, która zawiera sam szum. Oznaczmy ją jako $z[t]$ i estymujmy jej widmową gęstość mocy: 
+\begin{equation}
+	\widehat{S_{Z}[\omega_{i}]} = \frac{1}{N}|Z[\omega_{i}]|^2,
+\end{equation} 
+gdzie: \\
+$i = 0,1,...,\frac{N}{2}$, \\
+$Z[\omega_{i}] = \mathrm{dft}(z[t])$.\\
+
+Jeżeli dostępne jest wiele ramek zawierających tylko szum, to można zastosować uśrednianie:
+\begin{equation}
+	\widehat{S_{Z}[\omega_{i}]} = \frac{1}{U}\sum_{i=1}^{N}\sum_{j=1}^{U} \widehat{S_{Z_{j}}[\omega_{i}]},
+\end{equation} gdzie: \\
+U - ilość ramek zawierających tylko szum.
+
+
+\subsection{Estymacja mocy widmowej sygnału.}
+Drugim krokiem jest estymacja mocy widmowej sygnału. W tym celu bierzemy pierwszą ramkę sygnału wejściowego. Oznaczmy ją jako $y[t]$. 
+\begin{equation}
+	\widehat{S_{Y}[\omega_{i}]} = \frac{1}{N}|Y[\omega_{i}]|^2,
+\end{equation} gdzie: \\
+$i = 0,1,...,\frac{N}{2}$, \\
+$Y[\omega_{i}] = \mathrm{dft}(y[t])$.
+
+\subsection{Estymacja funkcji gęstości widmowej mocy sygnału bezszumowego.}
+Trzecim krokiem algorytmu jest estymacja funkcji gęstości widmowej mocy sygnału bezszumowego. W tym celu wykorzystujemy wyniki z równań (4) i (5):
+\begin{equation}
+	\widehat{S_{X}[\omega_{i}]} = 
+	\left\{ \begin{array}{ll}
+		\widehat{S_{Y}[\omega_{i}]}-\widehat{S_{Z}[\omega_{i}]} & 
+		\textrm{gdy $\widehat{S_{Y}[\omega_{i}]}-\widehat{S_{Z}[\omega_{i}]}\geq 0$}\\
+		 0 & \textrm{w pozostałych przypadkach}\\
+	\end{array}\right.,
+\end{equation} gdzie: \\
+$i = 0,1,...\frac{N}{2}$.
+
+\subsection{Filtr odszumiający}
+Czwartym krokiem jest zaprojektowanie filtra, który odszumi nasz sygnał wejściowy: 
+\begin{equation}
+		\widehat{A}[\omega_{i}] = \sqrt{\frac{\widehat{S_{X}}[\omega_{i}] }{\widehat{S_{Y}}[\omega_{i}]}},
+\end{equation} gdzie: \\
+$i = 0,1,...,\frac{N}{2}$.
+Filtr ten jest symetryczny, więc drugą część próbek wystarczy odbić względem próbki $\frac{N}{2}$:
+Czwartym krokiem jest zaprojektowanie filtra, który odszumi nasz sygnał wejściowy: 
+\begin{equation}
+	\widehat{A}[\omega_{i}] = 	\widehat{A}[\omega_{N-1-i}],
+\end{equation} gdzie: \\
+$i = \frac{N}{2}+1, \frac{N}{2}+2,...,N-1$.
+
+
+\subsection{Odszumianie}
+Piątym krokiem jest wykorzystanie filtra zaprojektowanego w poprzednim etapie: 
+\begin{equation}
+	\widehat{X_{czysty}}[\omega_{i}] = \widehat{A}[\omega_{i}]\widehat{Y}[\omega_{i}]
+\end{equation}
+Na koniec wystarczy przeprowadzić odwrotną dyskretną transformatę Fouriera:
+\begin{equation}
+	\widehat{x_{czysty}}[t] =\mathrm{idft}(\widehat{X_{czysty}}[\omega_{i}]) 
+\end{equation}
+W efekcie otrzymujemy pierwszą ramkę pozbawioną szumu. Teraz należy wczytać kolejną ramkę i wrócić do drugiego kroku. Czynności te powtarzamy do ostatniej ramki sygnału wejściowego. 
+
+\subsection{Rozszerzenie metody o technikę overlap-add}
+W przypadku, gdy na końcach lub początkach każdej z ramki słychać nieciągłość sygnału można zastosować technikę overlap-add. W tym celu należy pobierać kolejne ramki o długości $N$ z przesunięciem $\frac{N}{2}$ oraz wykorzystać współczynnik $w[t]$:
+\begin{equation}
+	w[t] = 1 - \frac{|t-N|}{N}
+\end{equation}
+\begin{equation}
+	\widehat{x_{overlap_{i}}}[t]=\widehat{x_{czysty_i}}[t+\frac{N}{2}]w[t] + \widehat{x_{czysty_{i+1}}}[t]w[t],
+\end{equation} gdzie: \\
+$N$ - szerokość ramki,\\ 
+$t = 1,2,...,\frac{N}{2}$, \\
+$i = 1,2,...,R$, \\
+$R$ - liczba ramek na które został podzielony sygnał wejściowy. \\
+
+Dzięki temu otrzymujemy kolejne ramki pozbawione szumu oraz nieciągłości sygnału na początku lub końcu ramki.
+
+\section{Listing programu}
+Program został napisany w środowisku Matlab.
+\begin{lstlisting}
+clear; clc;
+format compact
+format long
+
+% Parametry
+koniec      = 2^18; 
+dl_ramka    = koniec/256; 
+skal        = 10; 
+ram_szum    = 30; 
+
+% Czytanie z pliku audio
+[y,Fs]  = audioread('Randka w ciemno.wav');
+info    = audioinfo('Randka w ciemno.wav');
+y1      = y(1:1:koniec);
+
+% Generowanie bialego szumu
+szum = wgn(koniec,1,-40);
+
+y2 = y1+szum;
+y3 = zeros(length(y2)+dl_ramka*ram_szum,1);
+
+for i=1:1:(koniec+dl_ramka*ram_szum)
+	if i <= dl_ramka*ram_szum
+		y3(i) = szum(i);
+	else 
+		y3(i) = y2(i-dl_ramka*ram_szum);
+	end
+end 
+
+% Krok 1
+ramki   = ram_szum;
+S_z     = zeros(dl_ramka/2,1);
+N       = dl_ramka;
+szum_usr= zeros(dl_ramka,1);
+szum2   = zeros(N,1);
+
+for i=1:1:ramki
+	for j=1:1:N
+		szum2(j) = szum(j+(N*(i-1)));
+	end
+	Z = fft(szum2);
+	for j=1:1:(N/2)
+		S_z(j) = S_z(j) + (1/N)*(abs(Z(j))^2);
+	end
+end
+
+S_z = S_z./ram_szum;
+	
+% Krok 2
+ramki   = (length(y3)/dl_ramka);
+y4      = y3(1:1:length(y3));
+S_y     = zeros(dl_ramka/2,1);
+N       = dl_ramka;
+S_x     = zeros(dl_ramka/2,1);
+A       = zeros(N,1);
+X       = zeros(N,1);
+sygnal  = zeros(N,1);
+wyjsciowy = zeros(length(y4),1);
+
+	
+for i=1:0.5:ramki
+	for j=1:1:N
+		sygnal(j) = y4(j+dl_ramka*(i-1));
+	end
+	Y = fft(sygnal);
+	
+	for j=1:1:(N/2)
+		S_y(j) = (1/N)*(abs(Y(j))^2);
+	end 
+	
+	% Krok 3 
+	for j=1:1:N/2
+		if (S_y(j) - skal*S_z(j) >= 0)
+			S_x(j) = S_y(j) - skal*S_z(j);
+		else
+			S_x(j) = 0;
+		end
+	end
+	
+	% Krok 4
+	for j=1:1:N
+		if j <= N/2
+			A(j) = sqrt(S_x(j)/S_y(j));
+		else
+			A(j) = A(N-j+1);
+		end
+	end
+
+	for j=1:1:length(Y)
+		X(j) = (A(j))*(Y(j));
+	end
+
+	Xodw = real(ifft(X));
+
+	for j=1:1:dl_ramka
+		k = j+(N*(i-1));
+		wp = 1-(abs(j-N*0.5)/(N*0.5));
+		wyjsciowy(k) = wyjsciowy(k)+wp*Xodw(j);
+	end
+end
+sound(wyjsciowy,Fs)
+\end{lstlisting}
+\end{document}

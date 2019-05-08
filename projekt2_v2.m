@@ -5,7 +5,8 @@ format long
 % Parametry
 koniec      = 2^18; % d³ugoœæ oryginalnego pliku audio
 dl_ramka    = koniec/512; 
-skal        = 10;
+skal        = 30;
+skal2       = 30;
 ram_szum    = 50;
 
 % Czytanie z pliku audio
@@ -20,7 +21,7 @@ y1 = y(1:1:koniec);
 % sound(y1,Fs)
 
 % Generowanie bia³ego szumu
-szum = wgn(koniec,1,-35);
+szum = wgn(koniec,1,-30);
 % sound(szum,Fs);
 % plot(1:1:Fs,szum);
 
@@ -73,7 +74,6 @@ A = zeros(N,1);
 X = zeros(N,1);
 sygnal = zeros(N,1);
 
-
 for i=1:1:ramki
     for j=1:1:N
         sygnal(j) = y4(j+dl_ramka*(i-1));
@@ -97,11 +97,12 @@ for i=1:1:ramki
     for j=1:1:N
         if j <= N/2
             A(j) = sqrt(S_x(j)/S_y(j));
+        elseif j == N
+            A(j) = A(1);
         else
-            A(j) = A(N-j+1);
+            A(j) = A(N-j);
         end
     end
-    
 %     plot(real(A));
 %     pause();
     for j=1:1:length(Y)
@@ -123,5 +124,69 @@ for i=1:1:ramki
     i
 end
 
-wyjsciowy = real(wyjsciowy);
-sound(wyjsciowy,Fs)
+% Overlap
+for i=1:1:ramki-1
+    for j=1:1:N
+        sygnal(j) = y4(N/2+j+dl_ramka*(i-1));
+    end
+    Y = fft(sygnal);
+    
+    for j=1:1:(N/2)
+        S_y(j) = (1/N)*(abs(Y(j))^2);
+    end 
+
+    % Krok 3 
+    for j=1:1:N/2
+        if (S_y(j) - skal2*S_z(j) >= 0)
+            S_x(j) = S_y(j) - skal2*S_z(j);
+        else
+            S_x(j) = 0;
+        end
+    end
+
+    % Krok 4
+    for j=1:1:N
+        if j <= N/2
+            A(j) = sqrt(S_x(j)/S_y(j));
+        elseif j == N
+            A(j) = A(1);
+        else
+            A(j) = A(N-j);
+        end
+    end
+%     plot(real(A));
+%     pause();
+    for j=1:1:length(Y)
+%       Metoda normalna
+        X(j) = (A(j))*(Y(j));
+%       Metoda rozszerzona
+%         licznik = (abs(Y(j))^beta-alfa*(abs(szum_usr(j))^beta));
+%         if (licznik < 0) 
+%             licznik =0; 
+%         end
+%         X(j) = ((licznik/abs(Y(j))^beta)^(1/beta))*Y(j);
+    end
+    
+    Xodw = ifft(X);
+    for j=1:1:dl_ramka
+        k = j+dl_ramka*(i-1);
+        wyjsciowy2(k) = Xodw(j);
+    end
+    i
+end
+wyjsciowy3 = zeros(length(wyjsciowy2),1);
+for i=1:1:N/2
+    wyjsciowy3(i) = wyjsciowy(i);
+end
+k=0;
+
+for i=1:1:length(wyjsciowy2)
+    k = k+1;
+    wyjsciowy3(i+N/2) = (1-abs(k-0.5*N)/(0.5*N))*wyjsciowy(i+N/2)+(1-abs(k-0.5*N)/(0.5*N))*wyjsciowy2(i);
+    if k==N+1
+        k=0;
+    end
+end
+
+wyjsciowy3 = real(wyjsciowy3);
+sound(wyjsciowy3,Fs)

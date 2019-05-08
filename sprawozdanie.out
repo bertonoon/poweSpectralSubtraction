@@ -1,0 +1,9 @@
+\BOOKMARK [1][-]{section.1}{Power spectral subtraction}{}% 1
+\BOOKMARK [2][-]{subsection.1.1}{DFT i IDFT}{section.1}% 2
+\BOOKMARK [2][-]{subsection.1.2}{Estymacja mocy widmowej szumu.}{section.1}% 3
+\BOOKMARK [2][-]{subsection.1.3}{Estymacja mocy widmowej sygnalu.}{section.1}% 4
+\BOOKMARK [2][-]{subsection.1.4}{Estymacja funkcji gestosci widmowej mocy sygnalu bezszumowego.}{section.1}% 5
+\BOOKMARK [2][-]{subsection.1.5}{Filtr odszumiajacy}{section.1}% 6
+\BOOKMARK [2][-]{subsection.1.6}{Odszumianie}{section.1}% 7
+\BOOKMARK [2][-]{subsection.1.7}{Rozszerzenie metody o technike overlap-add}{section.1}% 8
+\BOOKMARK [1][-]{section.2}{Listing programu}{}% 9
